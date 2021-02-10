@@ -1,0 +1,6 @@
+[submodule "js/geoptic.js"]
+	path = js/geoptic.js
+	url = git@github.com:MarkGillespie/geoptic.js
+[submodule "js/geometry-processing-js"]
+	path = js/geometry-processing-js
+	url = git@github.com:GeometryCollective/geometry-processing-js.git
