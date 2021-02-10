@@ -33,9 +33,11 @@ geoptic.commandGuiFields["K"] = function () {
     curvatures[iV] = geo.scalarGaussCurvature(v);
   }
   let q = gpMesh.addVertexScalarQuantity("K", curvatures);
-  q.setEnabled(true);
   q.dataMin = -Math.PI / 16;
   q.dataMax = Math.PI / 16;
+  q.setColorMap("coolwarm");
+  console.log("coolwarm");
+  q.setEnabled(true);
 };
 geoptic.commandGui
   .add(geoptic.commandGuiFields, "K")
