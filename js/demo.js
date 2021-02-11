@@ -1,5 +1,14 @@
 import * as THREE from "https://unpkg.com/three@0.125.1/build/three.module.js";
-import { Geoptic } from "./geoptic.js//build/geoptic.module.min.js";
+import { Geoptic } from "./geoptic.js/build/geoptic.module.min.js";
+import {
+  Mesh,
+  MeshIO,
+  Geometry,
+  indexElements,
+  DenseMatrix,
+} from "./geometry-processing-js/build/geometry-processing.module.min.js";
+
+console.log(Mesh);
 
 let mesh = undefined;
 let geo = undefined;
