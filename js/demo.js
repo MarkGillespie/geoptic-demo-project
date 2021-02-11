@@ -1,14 +1,15 @@
 import * as THREE from "https://unpkg.com/three@0.125.1/build/three.module.js";
 import { Geoptic } from "./geoptic.js/build/geoptic.module.min.js";
+// import { Geoptic } from "./geoptic.js/src/geoptic.js";
+
 import {
   Mesh,
   MeshIO,
   Geometry,
   indexElements,
   DenseMatrix,
+  memoryManager,
 } from "./geometry-processing-js/build/geometry-processing.module.min.js";
-
-console.log(Mesh);
 
 let mesh = undefined;
 let geo = undefined;
@@ -35,6 +36,20 @@ function initMesh(meshFile) {
   geo = new Geometry(mesh, soup.v);
 }
 
+function initCurveNetwork() {
+  let vertices = [];
+  for (let iV = 0; iV < 300; iV++) {
+    const x = 1.5 * Math.sin(iV * 0.05);
+    const y = 1.5 * Math.cos(iV * 0.05);
+    const z = iV * 0.005 + 0.025 * Math.cos(iV * 0.5) - 0.8;
+    vertices.push([x, z, y]);
+  }
+  geoptic.registerCurveNetwork("Helix", vertices);
+}
+
+function initPointCloud() {}
+
+// Add button to compute gaussian curvature
 geoptic.commandGuiFields["K"] = function () {
   let curvatures = [];
   for (let v of mesh.vertices) {
@@ -52,27 +67,41 @@ geoptic.commandGui
   .add(geoptic.commandGuiFields, "K")
   .name("Compute Gauss Curvature");
 
+// Add button to compute Laplacian eigenvector
 geoptic.commandGuiFields["L"] = function () {
+  console.time("construction");
   let vertexIndices = indexElements(geo.mesh.vertices);
   let L = geo.laplaceMatrix(vertexIndices);
   let M = geo.massMatrix(vertexIndices);
+  console.timeEnd("construction");
 
   let N = L.nRows();
+  console.time("factorization");
   let llt = L.chol();
   let ones = DenseMatrix.ones(N, 1);
   let x = DenseMatrix.random(N, 1);
+  x = llt.solvePositiveDefinite(M.timesDense(x));
+  console.timeEnd("factorization");
+
+  console.time("power iteration");
   for (let i = 0; i < 50; i++) {
     x = llt.solvePositiveDefinite(M.timesDense(x));
     x.scaleBy(1 / x.norm(2));
   }
+  console.timeEnd("power iteration");
+  console.time("recording answers");
   let eVec = [];
   for (let v of geo.mesh.vertices) {
     let iV = vertexIndices[v];
     eVec[iV] = x.get(iV, 0);
   }
+  console.timeEnd("recording answers");
 
+  console.time("geoptic");
   let q = gpMesh.addVertexScalarQuantity("L eigenvector 0", eVec);
+  console.timeEnd("geoptic");
   q.setEnabled(true);
+  memoryManager.deleteExcept([]);
 };
 geoptic.commandGui
   .add(geoptic.commandGuiFields, "L")
@@ -83,7 +112,10 @@ geoptic.userCallback = () => {};
 // Initialize geoptic
 geoptic.init();
 
+// Load the bunny mesh
 initMesh(bunny);
+
+initCurveNetwork();
 
 geoptic.doneLoading();
 
