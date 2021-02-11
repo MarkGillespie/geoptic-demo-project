@@ -1,6 +1,6 @@
 import * as THREE from "https://unpkg.com/three@0.125.1/build/three.module.js";
-import { Geoptic } from "./geoptic.js/build/geoptic.module.min.js";
-// import { Geoptic } from "./geoptic.js/src/geoptic.js";
+// import { Geoptic } from "./geoptic.js/build/geoptic.module.min.js";
+import { Geoptic } from "./geoptic.js/src/geoptic.js";
 
 import {
   Mesh,
@@ -16,7 +16,7 @@ let geo = undefined;
 let gpMesh = undefined;
 
 // create geoptic manager
-let geoptic = new Geoptic();
+let geoptic = new Geoptic({ parent: document.getElementById("geoptic-panel") });
 
 function initMesh(meshFile) {
   let soup = MeshIO.readOBJ(meshFile);
@@ -118,6 +118,7 @@ initMesh(bunny);
 initCurveNetwork();
 
 geoptic.doneLoading();
+geoptic.message("Done loading");
 
 // Load the meshes and set up our state
 // walkMesh(bunny);
