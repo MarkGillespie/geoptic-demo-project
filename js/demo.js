@@ -37,7 +37,7 @@ function initMesh(meshFile) {
 }
 
 function initCurveNetwork() {
-  let vertices = [];
+  const vertices = [];
   for (let iV = 0; iV < 300; iV++) {
     const x = 1.5 * Math.sin(iV * 0.05);
     const y = 1.5 * Math.cos(iV * 0.05);
@@ -47,7 +47,16 @@ function initCurveNetwork() {
   geoptic.registerCurveNetwork("Helix", vertices);
 }
 
-function initPointCloud() {}
+function initPointCloud() {
+  const vertices = [];
+  for (let iV = 0; iV < 500; iV++) {
+    const x = Math.random(-1, 1);
+    const y = Math.random(-1, 1);
+    const z = Math.random(-1, 1);
+    vertices.push([x, y, z]);
+  }
+  geoptic.registerPointCloud("Random Points", vertices);
+}
 
 // Add button to compute gaussian curvature
 geoptic.commandGuiFields["K"] = function () {
@@ -116,6 +125,8 @@ geoptic.init();
 initMesh(bunny);
 
 initCurveNetwork();
+
+initPointCloud();
 
 geoptic.doneLoading();
 geoptic.message("Done loading");
