@@ -1,6 +1,8 @@
 import * as THREE from "https://unpkg.com/three@0.125.1/build/three.module.js";
-import { Geoptic } from "./geoptic.js/build/geoptic.module.min.js";
-// import { Geoptic } from "./geoptic.js/src/geoptic.js";
+// import { Geoptic } from "./geoptic.js/build/geoptic.module.min.js";
+import { Geoptic } from "./geoptic.js/src/geoptic.js";
+
+import { bunny } from "./disk-bunny.js";
 
 import {
   Mesh,
@@ -9,6 +11,7 @@ import {
   indexElements,
   DenseMatrix,
   memoryManager,
+  SpectralConformalParameterization,
 } from "./geometry-processing-js/build/geometry-processing.module.min.js";
 
 let mesh = undefined;
@@ -115,6 +118,36 @@ geoptic.commandGuiFields["L"] = function () {
 geoptic.commandGui
   .add(geoptic.commandGuiFields, "L")
   .name("Laplacian Eigenvector");
+
+// Add button to compute Laplacian eigenvector
+geoptic.commandGuiFields["SCP"] = function () {
+  const scp = new SpectralConformalParameterization(geo);
+
+  console.time("compute flattening");
+  const flattening = scp.flatten();
+  console.timeEnd("compute flattening");
+
+  console.time("record flattening");
+  let fVec = [];
+  for (let v of geo.mesh.vertices) {
+    let iV = scp.vertexIndex[v];
+    fVec[iV] = flattening[v];
+  }
+  console.timeEnd("record flattening");
+
+  console.time("geoptic");
+  let q = gpMesh.addVertexParameterizationQuantity("SCP Texture", fVec);
+  q.setEnabled(true);
+  console.timeEnd("geoptic");
+
+  console.time("collect garbage");
+  memoryManager.deleteExcept([]);
+  console.timeEnd("collect garbage");
+};
+
+geoptic.commandGui
+  .add(geoptic.commandGuiFields, "SCP")
+  .name("Parameterize (SCP)");
 
 geoptic.userCallback = () => {};
 
