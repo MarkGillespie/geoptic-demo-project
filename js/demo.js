@@ -5,6 +5,7 @@ import { Geoptic } from "./geoptic.js/build/geoptic.module.min.js";
 import { bunny } from "./disk-bunny.js";
 
 import {
+  Vector,
   Mesh,
   MeshIO,
   Geometry,
@@ -12,11 +13,16 @@ import {
   DenseMatrix,
   memoryManager,
   SpectralConformalParameterization,
+  HeatMethod,
 } from "./geometry-processing-js/build/geometry-processing.module.min.js";
 
 let mesh = undefined;
 let geo = undefined;
+let sources = [];
+let sourceIndices = [];
+
 let gpMesh = undefined;
+let gpSources = undefined;
 
 // create geoptic manager
 let geoptic = new Geoptic({ parent: document.getElementById("geoptic-panel") });
@@ -24,15 +30,7 @@ let geoptic = new Geoptic({ parent: document.getElementById("geoptic-panel") });
 function initMesh(meshFile) {
   let soup = MeshIO.readOBJ(meshFile);
 
-  // define size() and get() for geoptic
-  let faces = soup.f;
-  faces.size = function () {
-    return faces.length / 3;
-  };
-  faces.get = function (i) {
-    return [faces[3 * i], faces[3 * i + 1], faces[3 * i + 2]];
-  };
-  gpMesh = geoptic.registerSurfaceMesh("bunny", soup.v, faces);
+  gpMesh = geoptic.registerSurfaceMesh("bunny", soup.v, soup.f);
 
   mesh = new Mesh();
   mesh.build(soup);
@@ -119,7 +117,7 @@ geoptic.commandGui
   .add(geoptic.commandGuiFields, "L")
   .name("Laplacian Eigenvector");
 
-// Add button to compute Laplacian eigenvector
+// Add button to perform Spectral Conformal Parameterization
 geoptic.commandGuiFields["SCP"] = function () {
   const scp = new SpectralConformalParameterization(geo);
 
@@ -149,6 +147,44 @@ geoptic.commandGui
   .add(geoptic.commandGuiFields, "SCP")
   .name("Parameterize (SCP)");
 
+// Add folder for Head Method
+let heatFolder = geoptic.commandGui.addFolder(
+  "Geodesic Distance (Heat Method)"
+);
+// Add Checkbox to toggle "Source Placement Mode"
+geoptic.commandGuiFields["Sources"] = false;
+heatFolder.add(geoptic.commandGuiFields, "Sources").name("Place Sources");
+heatFolder.open();
+let hm = undefined;
+function heatMethod() {
+  console.time("construct HeatMethod");
+  if (!hm || hm.geometry != geo) {
+    memoryManager.deleteExcept([]);
+    hm = new HeatMethod(geo);
+  }
+  console.timeEnd("construct HeatMethod");
+  const N = gpMesh.nV;
+  const sources = DenseMatrix.zeros(N, 1);
+  sourceIndices.forEach((iV) => {
+    sources.set(1, iV, 0);
+  });
+  console.time("run HeatMethod");
+  const distance = hm.compute(sources);
+  console.timeEnd("run HeatMethod");
+
+  let dVec = [];
+  for (let iV = 0; iV < N; iV++) {
+    dVec[iV] = distance.get(iV, 0);
+  }
+
+  console.time("geoptic");
+  let q = gpMesh.addVertexDistanceQuantity("Distance from Sources", dVec);
+  q.setEnabled(true);
+  console.timeEnd("geoptic");
+
+  memoryManager.deleteExcept([hm.A, hm.F]);
+}
+
 geoptic.userCallback = () => {};
 
 // Initialize geoptic
@@ -156,6 +192,30 @@ geoptic.init();
 
 // Load the bunny mesh
 initMesh(bunny);
+
+function addHeatMethodSource(iV) {
+  sourceIndices.push(iV);
+  const pos = gpMesh.coords[iV];
+  sources.push(gpMesh.coords[iV]);
+  gpSources = geoptic.registerPointCloud("Heat Method Sources", sources);
+  heatMethod();
+}
+// Add a callback to allow source placement
+gpMesh.vertexPickCallback = (iV) => {
+  if (geoptic.commandGuiFields["Sources"]) {
+    addHeatMethodSource(iV);
+  }
+};
+gpMesh.edgePickCallback = (iE) => {
+  if (geoptic.commandGuiFields["Sources"]) {
+    addHeatMethodSource(gpMesh.edges[iE][0]);
+  }
+};
+gpMesh.facePickCallback = (iF) => {
+  if (geoptic.commandGuiFields["Sources"]) {
+    addHeatMethodSource(gpMesh.faces[iF][0]);
+  }
+};
 
 initCurveNetwork();
 
