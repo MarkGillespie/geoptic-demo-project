@@ -1,6 +1,6 @@
 import * as THREE from "https://unpkg.com/three@0.125.1/build/three.module.js";
-import { Geoptic } from "./geoptic.js/build/geoptic.module.min.js";
-// import { Geoptic } from "./geoptic.js/src/geoptic.js";
+// import { Geoptic } from "./geoptic.js/build/geoptic.module.min.js";
+import { Geoptic } from "./geoptic.js/src/geoptic.js";
 
 import { bunny } from "./disk-bunny.js";
 
@@ -23,6 +23,8 @@ let sourceIndices = [];
 
 let gpMesh = undefined;
 let gpSources = undefined;
+
+let hm = undefined; // HeatMethod object, stores Laplacian factorization
 
 // create geoptic manager
 let geoptic = new Geoptic({ parent: document.getElementById("geoptic-panel") });
@@ -139,7 +141,11 @@ geoptic.commandGuiFields["SCP"] = function () {
   console.timeEnd("geoptic");
 
   console.time("collect garbage");
-  memoryManager.deleteExcept([]);
+  if (hm) {
+    memoryManager.deleteExcept([hm.A, hm.F]);
+  } else {
+    memoryManager.deleteExcept([]);
+  }
   console.timeEnd("collect garbage");
 };
 
@@ -155,7 +161,6 @@ let heatFolder = geoptic.commandGui.addFolder(
 geoptic.commandGuiFields["Sources"] = false;
 heatFolder.add(geoptic.commandGuiFields, "Sources").name("Place Sources");
 heatFolder.open();
-let hm = undefined;
 function heatMethod() {
   console.time("construct HeatMethod");
   if (!hm || hm.geometry != geo) {
