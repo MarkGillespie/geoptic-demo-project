@@ -1,6 +1,6 @@
 import * as THREE from "https://unpkg.com/three@0.125.1/build/three.module.js";
-// import { Geoptic } from "./geoptic.js/build/geoptic.module.min.js";
-import { Geoptic } from "./geoptic.js/src/geoptic.js";
+import { Geoptic } from "./geoptic.js/build/geoptic.module.min.js";
+// import { Geoptic } from "./geoptic.js/src/geoptic.js";
 
 import { bunny } from "./disk-bunny.js";
 
@@ -121,32 +121,34 @@ geoptic.commandGui
 
 // Add button to perform Spectral Conformal Parameterization
 geoptic.commandGuiFields["SCP"] = function () {
-  const scp = new SpectralConformalParameterization(geo);
+  geoptic.slowFunction(() => {
+    const scp = new SpectralConformalParameterization(geo);
 
-  console.time("compute flattening");
-  const flattening = scp.flatten();
-  console.timeEnd("compute flattening");
+    console.time("compute flattening");
+    const flattening = scp.flatten();
+    console.timeEnd("compute flattening");
 
-  console.time("record flattening");
-  let fVec = [];
-  for (let v of geo.mesh.vertices) {
-    let iV = scp.vertexIndex[v];
-    fVec[iV] = flattening[v];
-  }
-  console.timeEnd("record flattening");
+    console.time("record flattening");
+    let fVec = [];
+    for (let v of geo.mesh.vertices) {
+      let iV = scp.vertexIndex[v];
+      fVec[iV] = flattening[v];
+    }
+    console.timeEnd("record flattening");
 
-  console.time("geoptic");
-  let q = gpMesh.addVertexParameterizationQuantity("SCP Texture", fVec);
-  q.setEnabled(true);
-  console.timeEnd("geoptic");
+    console.time("geoptic");
+    let q = gpMesh.addVertexParameterizationQuantity("SCP Texture", fVec);
+    q.setEnabled(true);
+    console.timeEnd("geoptic");
 
-  console.time("collect garbage");
-  if (hm) {
-    memoryManager.deleteExcept([hm.A, hm.F]);
-  } else {
-    memoryManager.deleteExcept([]);
-  }
-  console.timeEnd("collect garbage");
+    console.time("collect garbage");
+    if (hm) {
+      memoryManager.deleteExcept([hm.A, hm.F]);
+    } else {
+      memoryManager.deleteExcept([]);
+    }
+    console.timeEnd("collect garbage");
+  });
 };
 
 geoptic.commandGui
@@ -199,11 +201,13 @@ geoptic.init();
 initMesh(bunny);
 
 function addHeatMethodSource(iV) {
-  sourceIndices.push(iV);
   const pos = gpMesh.coords[iV];
   sources.push(gpMesh.coords[iV]);
   gpSources = geoptic.registerPointCloud("Heat Method Sources", sources);
-  heatMethod();
+  geoptic.slowFunction(() => {
+    sourceIndices.push(iV);
+    heatMethod();
+  });
 }
 // Add a callback to allow source placement
 gpMesh.vertexPickCallback = (iV) => {
