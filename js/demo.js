@@ -52,13 +52,16 @@ function initCurveNetwork() {
 
 function initPointCloud() {
   const vertices = [];
+  const fn = [];
   for (let iV = 0; iV < 500; iV++) {
     const x = Math.random(-1, 1);
     const y = Math.random(-1, 1);
     const z = Math.random(-1, 1);
     vertices.push([x, y, z]);
+    fn.push(Math.random(-1, 1));
   }
-  geoptic.registerPointCloud("Random Points", vertices);
+  const pc = geoptic.registerPointCloud("Random Points", vertices);
+  pc.addScalarQuantity("fn", fn);
 }
 
 // Add button to compute gaussian curvature
@@ -193,9 +196,6 @@ function heatMethod() {
 }
 
 geoptic.userCallback = () => {};
-
-// Initialize geoptic
-geoptic.init();
 
 // Load the bunny mesh
 initMesh(bunny);
