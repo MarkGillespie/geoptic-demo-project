@@ -204,11 +204,35 @@ function addHeatMethodSource(iV) {
   const pos = gpMesh.coords[iV];
   sources.push(gpMesh.coords[iV]);
   gpSources = geoptic.registerPointCloud("Heat Method Sources", sources);
+  // Add a callback to the heat method sources to remove them
+  gpSources.vertexPickCallback = (iV) => {
+    if (geoptic.commandGuiFields["Sources"]) {
+      removeHeatMethodSource(iV);
+    }
+  };
   geoptic.slowFunction(() => {
     sourceIndices.push(iV);
     heatMethod();
   });
 }
+function removeHeatMethodSource(iV) {
+  console.log("remove");
+  sources.splice(iV, 1);
+  sourceIndices.splice(iV, 1);
+  gpSources = geoptic.registerPointCloud("Heat Method Sources", sources);
+  // Add a callback to the heat method sources to remove them
+  gpSources.vertexPickCallback = (iV) => {
+    if (geoptic.commandGuiFields["Sources"]) {
+      removeHeatMethodSource(iV);
+    }
+  };
+  if (!sourceIndices.empty) {
+    geoptic.slowFunction(() => {
+      heatMethod();
+    });
+  }
+}
+
 // Add a callback to allow source placement
 gpMesh.vertexPickCallback = (iV) => {
   if (geoptic.commandGuiFields["Sources"]) {
